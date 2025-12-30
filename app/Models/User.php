@@ -47,4 +47,11 @@ class User extends Authenticatable
     {
         return $this->rol?->nombre === 'informatica';
     }
+
+    // RELACIÓN CON SOLICITUDES CREADAS POR EL USUARIO
+    public function solicitudes()
+    {
+        return $this->hasMany(Solicitud::class, 'user_id');
+    }
+
 }
