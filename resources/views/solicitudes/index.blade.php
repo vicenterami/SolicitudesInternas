@@ -31,13 +31,24 @@
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                     Estado
                                 </th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Técnico Asignado
+                                </th>
+                                {{-- SOLO mostramos esta columna si NO es usuario normal (rol_id != 1) --}}
+                                @if(Auth::user()->rol_id != 1)
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Acciones
+                                    </th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($solicitudes as $solicitud)
                                 <tr>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        {{ $solicitud->titulo }}
+                                        <a href="{{ route('solicitudes.show', $solicitud->id) }}" class="text-blue-600 hover:underline font-bold">
+                                            {{ $solicitud->titulo }}
+                                        </a>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         {{ $solicitud->creador->name }}
@@ -48,6 +59,17 @@
                                             <span class="relative">{{ $solicitud->estado }}</span>
                                         </span>
                                     </td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        {{ $solicitud->tecnico ? $solicitud->tecnico->name : 'Sin asignar' }}
+                                    </td>
+                                    {{-- SOLO mostramos el botón si NO es usuario normal --}}
+                                    @if(Auth::user()->rol_id != 1)
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <a href="{{ route('solicitudes.edit', $solicitud->id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                Gestionar
+                                            </a>
+                                        </td>
+                                    @endif
                                 </tr>
                             @empty
                                 <tr>

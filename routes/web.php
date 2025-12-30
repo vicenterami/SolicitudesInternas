@@ -23,14 +23,22 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Módulo de Solicitudes (TU NUEVO CÓDIGO)
+    // Módulo de Solicitudes
     Route::get('/solicitudes', [SolicitudController::class, 'index'])->name('solicitudes.index');
-    
-    // Formulario de creación
     Route::get('/solicitudes/crear', [SolicitudController::class, 'create'])->name('solicitudes.create');
-    
-    // Guardar datos (Es POST porque enviamos datos)
     Route::post('/solicitudes', [SolicitudController::class, 'store'])->name('solicitudes.store');
+
+    // NUEVAS RUTAS:
+    // 1. Mostrar formulario de edición
+    Route::get('/solicitudes/{id}/editar', [SolicitudController::class, 'edit'])->name('solicitudes.edit');
+    // 2. Guardar los cambios
+    Route::put('/solicitudes/{id}', [SolicitudController::class, 'update'])->name('solicitudes.update');
+
+    // Ver detalle (Para todos)
+    Route::get('/solicitudes/{id}', [SolicitudController::class, 'show'])->name('solicitudes.show');
+    
+    // Guardar comentario
+    Route::post('/solicitudes/{id}/comentarios', [SolicitudController::class, 'storeComentario'])->name('solicitudes.comentarios.store');
 });
 
 // Carga las rutas de autenticación (login, register, etc.)

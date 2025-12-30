@@ -9,10 +9,13 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Borramos para evitar duplicados si corres el seeder solo
+        DB::table('roles')->delete();
+
         DB::table('roles')->insert([
-            ['nombre' => 'usuario'],
-            ['nombre' => 'informatica'],
-            ['nombre' => 'admin'],
+            ['id' => 1, 'nombre' => 'usuario'],      // El ciudadano de a pie
+            ['id' => 2, 'nombre' => 'informatica'],  // El técnico
+            ['id' => 3, 'nombre' => 'admin'],        // El jefe (Tú)
         ]);
     }
 }

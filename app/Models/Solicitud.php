@@ -33,4 +33,10 @@ class Solicitud extends Model
     {
         return $this->belongsTo(User::class, 'tecnico_id');
     }
+
+    // Relación: Una solicitud tiene muchos comentarios
+    public function comentarios()
+    {
+        return $this->hasMany(Comentario::class, 'solicitud_id');
+    }
 }
