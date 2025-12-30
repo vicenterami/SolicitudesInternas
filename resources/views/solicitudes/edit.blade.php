@@ -1,8 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Gestionar Solicitud #{{ $solicitud->id }}
-        </h2>
+        <div class="flex justify-between items-center">
+            {{-- Botón "Regresar" a la izquierda --}}
+            <a href="{{ route('solicitudes.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm">
+                ← Volver al Listado
+            </a>
+
+            {{-- Título a la derecha --}}
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Gestionar Solicitud #{{ $solicitud->id }}
+            </h2>
+        </div>
     </x-slot>
 
     <div class="py-12">
