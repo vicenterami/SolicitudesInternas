@@ -47,19 +47,31 @@ class SolicitudController extends Controller
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'prioridad' => 'required|in:baja,media,alta', // Solo permitimos estos valores
+            'archivo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validación del archivo
         ]);
 
-        // 2. Crear la solicitud usando la relación con el usuario
-        // Esto equivale a: "Al usuario logueado, créale una solicitud con estos datos"
-        $request->user()->solicitudes()->create([
+        // 1. Crear la solicitud
+        $solicitud = $request->user()->solicitudes()->create([
             'titulo' => $validated['titulo'],
             'descripcion' => $validated['descripcion'],
             'prioridad' => $validated['prioridad'],
-            'estado' => 'pendiente', // Correcto: Coincide con la migración
+            'estado' => 'pendiente',
         ]);
 
-        // 3. Redirigir al listado con un mensaje de éxito
-        return redirect()->route('solicitudes.index')->with('status', 'Solicitud creada correctamente.');
+        // 2. Si viene un archivo, guardarlo
+        if ($request->hasFile('archivo')) {
+            // Guarda en storage/app/public/adjuntos
+            $ruta = $request->file('archivo')->store('adjuntos', 'public'); 
+
+            // Registrar en la base de datos
+            \App\Models\Adjunto::create([
+                'solicitud_id' => $solicitud->id,
+                'ruta_archivo' => $ruta,
+                'nombre_archivo' => $request->file('archivo')->getClientOriginalName(), 
+            ]);
+        }
+
+        return redirect()->route('solicitudes.index')->with('status', 'Solicitud creada con éxito.');
     }
 
     // Muestra el formulario para editar/gestionar una solicitud.

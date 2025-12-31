@@ -10,7 +10,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
-                    <form method="POST" action="{{ route('solicitudes.store') }}">
+                    <form method="POST" action="{{ route('solicitudes.store') }}" enctype="multipart/form-data"> 
                         @csrf {{-- Token de seguridad OBLIGATORIO en Laravel --}}
 
                         <div class="mb-4">
@@ -30,6 +30,12 @@
                                 <option value="media">Media (Afecta mi trabajo)</option>
                                 <option value="alta">Alta (Sistema crítico/Detenido)</option>
                             </select>
+                        </div>
+
+                        <div class="mt-4">
+                            <x-input-label for="archivo" :value="__('Adjuntar Archivo (Opcional)')" />
+                            <input type="file" name="archivo" id="archivo" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
+                            <p class="mt-1 text-sm text-gray-500">PDF, JPG, PNG (Max. 2MB)</p>
                         </div>
 
                         <div class="flex items-center justify-end mt-4">

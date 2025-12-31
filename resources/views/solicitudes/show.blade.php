@@ -30,6 +30,26 @@
                             <div class="text-sm text-gray-500 mt-2">Prioridad: {{ ucfirst($solicitud->prioridad) }}</div>
                         </div>
                     </div>
+
+
+                    {{-- === AQUÍ AGREGAMOS LOS ADJUNTOS === --}}
+                    @if($solicitud->adjuntos->count() > 0)
+                        <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-blue-800 mb-2 text-sm uppercase">Archivos Adjuntos:</h4>
+                            <ul class="list-disc list-inside">
+                                @foreach($solicitud->adjuntos as $adjunto)
+                                    <li>
+                                        <a href="{{ asset('storage/' . $adjunto->ruta_archivo) }}" target="_blank" class="text-blue-600 hover:underline hover:text-blue-800">
+                                            📄 {{ $adjunto->nombre_archivo }} 
+                                            <span class="text-gray-500 text-xs">(Clic para ver)</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    {{-- =================================== --}}
+
                     
                     <div class="border-t mt-4 pt-4 text-sm text-gray-500 flex justify-between">
                         <span>Solicitado por: <strong>{{ $solicitud->creador->name }}</strong></span>

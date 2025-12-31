@@ -39,4 +39,10 @@ class Solicitud extends Model
     {
         return $this->hasMany(Comentario::class, 'solicitud_id');
     }
+
+    // Relación: Una solicitud tiene muchos adjuntos
+    public function adjuntos()
+    {
+        return $this->hasMany(Adjunto::class, 'solicitud_id');
+    }
 }
