@@ -7,22 +7,26 @@ use App\Models\User;
 
 class SolicitudPolicy
 {
-    // ¿Quién puede ver el detalle de una solicitud?
+    // ¿Quién puede ver la lista general? (El index)
+    // Todos pueden entrar al index, pero el controlador decide qué datos mostrar.
+    public function viewAny(User $user)
+    {
+        return true;
+    }
+
+    // ¿Quién puede ver UN detalle específico?
     public function view(User $user, Solicitud $solicitud)
     {
-        // El ADMIN (3) y TÉCNICO (2) pueden ver todo.
-        if ($user->rol_id === 2 || $user->rol_id === 3) {
+        // Usamos el helper nuevo del modelo User, para leer mejor
+        if ($user->esPersonalTecnico()) {
             return true;
         }
-
-        // El usuario normal SOLO puede ver SUS propias solicitudes.
         return $user->id === $solicitud->user_id;
     }
 
-    // ¿Quién puede editar/gestionar una solicitud?
+    // ¿Quién puede editar?
     public function update(User $user, Solicitud $solicitud)
     {
-        // Solo Admin y Técnicos pueden editar
-        return $user->rol_id === 2 || $user->rol_id === 3;
+        return $user->esPersonalTecnico();
     }
 }

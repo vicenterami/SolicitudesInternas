@@ -48,6 +48,12 @@ class User extends Authenticatable
         return $this->rol?->nombre === 'informatica';
     }
 
+    // ¿Es personal de TI (Admin o Técnico)?
+    public function esPersonalTecnico(): bool
+    {
+        return $this->rol?->nombre === 'informatica' || $this->rol?->nombre === 'admin';
+    }
+
     // RELACIÓN CON SOLICITUDES CREADAS POR EL USUARIO
     public function solicitudes()
     {

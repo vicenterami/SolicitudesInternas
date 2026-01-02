@@ -16,14 +16,18 @@ class SolicitudController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if ($user->rol_id == 2 || $user->rol_id == 3) {
+
+        // LÓGICA SEMÁNTICA:
+        // El controlador decide QUÉ datos traer basándose en el tipo de usuario.
+        
+        if ($user->esPersonalTecnico()) {
+            // Si es TI, traemos TODO (usando el modelo limpio)
             $solicitudes = Solicitud::with('creador', 'tecnico')->latest()->get();
         } else {
-            $solicitudes = Solicitud::where('user_id', $user->id)
-                                    ->with('creador', 'tecnico')
-                                    ->latest()
-                                    ->get();
+            // Si es Cliente, usamos la RELACIÓN de Eloquent (Laravel filtra solo)
+            $solicitudes = $user->solicitudes()->with('creador', 'tecnico')->latest()->get();
         }
+
         return view('solicitudes.index', compact('solicitudes'));
     }
 
@@ -50,7 +54,7 @@ class SolicitudController extends Controller
 
         if ($request->hasFile('archivo')) {
             $ruta = $request->file('archivo')->store('adjuntos', 'public'); 
-            \App\Models\Adjunto::create([
+            Adjunto::create([
                 'solicitud_id' => $solicitud->id,
                 'ruta_archivo' => $ruta,
                 'nombre_archivo' => $request->file('archivo')->getClientOriginalName(), 
@@ -65,10 +69,12 @@ class SolicitudController extends Controller
     {
         $solicitud = Solicitud::findOrFail($id);
         
-        // CORREGIDO: Usamos Gate::authorize en vez de $this->authorize
+        // Usamos Gate::authorize en vez de $this->authorize
         Gate::authorize('update', $solicitud); 
 
-        $tecnicos = \App\Models\User::where('rol_id', 2)->get();
+        // Traemos los técnicos para el select, usamos el helper del modelo User
+        $tecnicos = User::where('rol_id', 2)->get();  
+
         return view('solicitudes.edit', compact('solicitud', 'tecnicos'));
     }
 
@@ -77,7 +83,6 @@ class SolicitudController extends Controller
     {
         $solicitud = Solicitud::findOrFail($id);
 
-        // CORREGIDO: ¡Muy importante! Proteger también el update, no solo el edit
         Gate::authorize('update', $solicitud); 
 
         $validated = $request->validate([
@@ -97,7 +102,6 @@ class SolicitudController extends Controller
     {
         $solicitud = Solicitud::with(['comentarios.user', 'creador', 'tecnico'])->findOrFail($id);
 
-        // CORREGIDO: Usamos Gate
         Gate::authorize('view', $solicitud); 
 
         return view('solicitudes.show', compact('solicitud'));
@@ -107,14 +111,14 @@ class SolicitudController extends Controller
     {
         $solicitud = Solicitud::findOrFail($id);
         
-        // CORREGIDO: También protegemos quien puede comentar (generalmente quien puede ver, puede comentar)
+        // Protegemos quien puede comentar (generalmente quien puede ver, puede comentar)
         Gate::authorize('view', $solicitud);
 
         $request->validate([
             'comentario' => 'required|string',
         ]);
 
-        \App\Models\Comentario::create([
+        Comentario::create([
             'comentario' => $request->comentario,
             'user_id' => Auth::id(),
             'solicitud_id' => $solicitud->id,
