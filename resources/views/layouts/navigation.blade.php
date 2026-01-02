@@ -16,10 +16,16 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
-                    {{-- AGREGA ESTO: Enlace a Solicitudes --}}
                     <x-nav-link :href="route('solicitudes.index')" :active="request()->routeIs('solicitudes.*')">
                         {{ __('Solicitudes') }}
                     </x-nav-link>
+
+                    {{-- Solo para Administradores --}}
+                    @if(Auth::user()->isAdmin())
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                            {{ __('Gestión Usuarios') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -79,6 +85,13 @@
             <x-responsive-nav-link :href="route('solicitudes.index')" :active="request()->routeIs('solicitudes.*')">
                 {{ __('Solicitudes') }}
             </x-responsive-nav-link>
+
+            {{-- Solo para Administradores --}}
+            @if(Auth::user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    {{ __('Gestión Usuarios') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

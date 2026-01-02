@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SolicitudController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminUserController;
 
 // 1. Página de inicio (Pública)
 Route::get('/', function () {
@@ -25,18 +26,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/solicitudes', [SolicitudController::class, 'index'])->name('solicitudes.index');
     Route::get('/solicitudes/crear', [SolicitudController::class, 'create'])->name('solicitudes.create');
     Route::post('/solicitudes', [SolicitudController::class, 'store'])->name('solicitudes.store');
-
-    // NUEVAS RUTAS:
-    // 1. Mostrar formulario de edición
     Route::get('/solicitudes/{id}/editar', [SolicitudController::class, 'edit'])->name('solicitudes.edit');
-    // 2. Guardar los cambios
     Route::put('/solicitudes/{id}', [SolicitudController::class, 'update'])->name('solicitudes.update');
-
     // Ver detalle (Para todos)
     Route::get('/solicitudes/{id}', [SolicitudController::class, 'show'])->name('solicitudes.show');
     
     // Guardar comentario
     Route::post('/solicitudes/{id}/comentarios', [SolicitudController::class, 'storeComentario'])->name('solicitudes.comentarios.store');
+
+    // Módulo de Administración de Usuarios (Solo Admin)
+    // Solo permitimos entrar si el middleware 'auth' pasa, la seguridad extra está en el controlador
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::resource('users', AdminUserController::class);
+    });
 });
 
 // Carga las rutas de autenticación (login, register, etc.)
