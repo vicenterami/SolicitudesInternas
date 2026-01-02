@@ -63,41 +63,43 @@
                 <div class="p-6">
                     <h4 class="text-lg font-bold mb-4">Historial de Comentarios</h4>
 
-                    <div class="space-y-4 mb-8">
+                    {{-- 1. AQUI AGREGAMOS EL ID "lista-comentarios" AL CONTENEDOR PRINCIPAL --}}
+                    <div id="lista-comentarios" class="space-y-4 mb-8 max-h-96 overflow-y-auto">
                         @forelse($solicitud->comentarios as $comentario)
-                            <div class="bg-white p-4 rounded-lg shadow {{ $comentario->user_id == Auth::id() ? 'border-l-4 border-blue-500' : '' }}">
+                            {{-- AGREGAMOS EL ID ÚNICO AQUÍ: id="comentario-{{ $comentario->id }}" --}}
+                            <div id="comentario-{{ $comentario->id }}" class="bg-white p-4 rounded-lg shadow {{ $comentario->user_id == Auth::id() ? 'border-l-4 border-blue-500' : '' }}">
                                 <div class="flex justify-between items-center mb-2">
-                                    <span class="font-bold text-gray-800">
-                                        {{ $comentario->user->name }}
-                                        <span class="text-xs text-gray-500 font-normal">({{ $comentario->user->rol_id == 2 ? 'Técnico' : ($comentario->user->rol_id == 3 ? 'Admin' : 'Usuario') }})</span>
-                                    </span>
-                                    <span class="text-xs text-gray-400">{{ $comentario->created_at->diffForHumans() }}</span>
+                                    {{-- ... resto del contenido igual ... --}}
                                 </div>
-                                <p class="text-gray-700">
-                                    {{ $comentario->comentario }}
-                                </p>
+                                <p class="text-gray-700">{{ $comentario->comentario }}</p>
                             </div>
                         @empty
-                            <p class="text-gray-500 italic text-center">No hay comentarios aún. ¡Escribe el primero!</p>
+                            <p id="mensaje-sin-comentarios" class="text-gray-500 italic text-center">No hay comentarios aún. ¡Escribe el primero!</p>
                         @endforelse
                     </div>
 
-                    <form action="{{ route('solicitudes.comentarios.store', $solicitud->id) }}" method="POST" class="bg-white p-4 rounded-lg shadow-lg">
-                        @csrf
+                    {{-- AGREGAMOS ID AL FORMULARIO PARA MANEJARLO CON JS --}}
+                    <form id="form-comentario" action="{{ route('solicitudes.comentarios.store', $solicitud->id) }}" class="bg-white p-4 rounded-lg shadow-lg">
+                        {{-- Quitamos el method="POST" del HTML porque lo haremos por Axios, pero dejamos el @csrf --}}
+                        @csrf 
                         <div class="mb-4">
-                            <label for="comentario" class="block text-sm font-medium text-gray-700">Nuevo Mensaje</label>
-                            <textarea name="comentario" id="comentario" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Escribe aquí para actualizar el estado o hacer una pregunta..."></textarea>
+                            {{-- ... inputs iguales ... --}}
+                            <textarea name="comentario" id="comentario" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required></textarea>
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                            {{-- Cambiamos type="submit" a un botón normal o controlamos el submit --}}
+                            <button type="submit" id="btn-enviar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
                                 Enviar Comentario
                             </button>
                         </div>
                     </form>
-
                 </div>
             </div>
 
         </div>
     </div>
+
+    {{-- DATOS OCULTOS PARA JS --}}
+    <div id="solicitud-data" data-id="{{ $solicitud->id }}" class="hidden"></div>
+
 </x-app-layout>

@@ -10,6 +10,8 @@ use App\Models\Comentario;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Adjunto;
+use App\Events\NuevaSolicitudCreada;
+use App\Events\NuevoComentarioCreado;
 
 class SolicitudController extends Controller
 {
@@ -51,6 +53,8 @@ class SolicitudController extends Controller
             'prioridad' => $validated['prioridad'],
             'estado' => 'pendiente',
         ]);
+
+        event(new NuevaSolicitudCreada($solicitud));
 
         if ($request->hasFile('archivo')) {
             $ruta = $request->file('archivo')->store('adjuntos', 'public'); 
@@ -118,11 +122,14 @@ class SolicitudController extends Controller
             'comentario' => 'required|string',
         ]);
 
-        Comentario::create([
+        $comentario = Comentario::create([
             'comentario' => $request->comentario,
             'user_id' => Auth::id(),
             'solicitud_id' => $solicitud->id,
         ]);
+
+        // DISPARAMOS EL EVENTO A LA COLA
+        event(new NuevoComentarioCreado($comentario));
 
         return redirect()->route('solicitudes.show', $id)->with('status', 'Comentario agregado.');
     }
