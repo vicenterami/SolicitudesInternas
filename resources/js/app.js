@@ -9,6 +9,12 @@ if (window.Echo) {
     // 1 Canal de solicitudes (Tabla Dashboard)
     window.Echo.channel('solicitudes')
         .listen('.solicitud.creada', (e) => {
+
+            // Verificamos si ya existe una fila con ese ID. Si existe, no hacemos NADA.
+            if (document.getElementById(`fila-${e.solicitud.id}`)) {
+                return; 
+            }
+
             console.log('Evento recibido:', e);
 
             const tablaBody = document.querySelector('table tbody');
@@ -161,4 +167,58 @@ if (window.Echo) {
                 }, 2500);
             });
     }
+
+    // 3. ACTUALIZACIÓN EN TIEMPO REAL (SHOW Y DASHBOARD)
+    
+    // A) Si estamos viendo una solicitud específica (show.blade.php)
+    if (solicitudData) {
+        const idSolicitudVista = solicitudData.dataset.id;
+        
+        window.Echo.channel(`solicitud.${idSolicitudVista}`)
+            .listen('.solicitud.actualizada', (e) => {
+                console.log('Solicitud actualizada:', e);
+
+                // 1. Actualizar Estado visualmente
+                const badgeEstado = document.getElementById(`estado-solicitud-${e.solicitud.id}`);
+                if (badgeEstado) {
+                    badgeEstado.innerText = e.solicitud.estado.toUpperCase();
+                    // Opcional: Aquí podrías agregar lógica para cambiar el color (bg-green-200, bg-red-200) según el estado
+                }
+
+                // 2. Actualizar Técnico asignado
+                const textoTecnico = document.getElementById(`tecnico-solicitud-${e.solicitud.id}`);
+                if (textoTecnico) {
+                    textoTecnico.innerText = e.solicitud.tecnico ? e.solicitud.tecnico.name : 'Sin asignar';
+                    
+                    // Efecto visual de parpadeo amarillo para que el usuario note el cambio
+                    textoTecnico.parentElement.style.backgroundColor = '#fef9c3';
+                    setTimeout(() => textoTecnico.parentElement.style.backgroundColor = 'transparent', 2000);
+                }
+            });
+    }
+
+    // B) Escuchar actualizaciones globales para el Dashboard (Contadores)
+    // Nota: Para actualizar el GRÁFICO necesitaríamos recalcular todo. 
+    // Por ahora haremos un truco simple: Recargar la página si cambian los stats O incrementar manualmente.
+    // Para simplificar tu aprendizaje actual, haremos que si llega una nueva solicitud, aumente el contador Total y Pendientes.
+
+    window.Echo.channel('solicitudes')
+        .listen('.solicitud.creada', (e) => {
+            // Incrementar contadores del Dashboard si existen en pantalla
+            const totalEl = document.getElementById('dash-total');
+            const pendientesEl = document.getElementById('dash-pendientes');
+            
+            if (totalEl) totalEl.innerText = parseInt(totalEl.innerText) + 1;
+            if (pendientesEl) pendientesEl.innerText = parseInt(pendientesEl.innerText) + 1;
+            
+            // Actualizar gráfico (Solo si existe la variable del gráfico)
+            // Esto es un truco: enviamos datos falsos visuales o recargamos. 
+            // Para hacerlo pro, deberías recibir los nuevos datos del gráfico en el evento.
+        })
+        .listen('.solicitud.actualizada', (e) => {
+             // Si cambia de estado, lo ideal sería recargar los contadores.
+             // Como es complejo calcular restar uno de pendientes y sumar uno a asignado en JS puro,
+             // una opción válida en sistemas reactivos simples es recargar el dashboard suavemente
+             // o simplemente dejar que el usuario refresque para ver los números globales exactos.
+        });
 }

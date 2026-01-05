@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\Adjunto;
 use App\Events\NuevaSolicitudCreada;
 use App\Events\NuevoComentarioCreado;
+use App\Events\SolicitudActualizada;
 
 class SolicitudController extends Controller
 {
@@ -98,6 +99,8 @@ class SolicitudController extends Controller
             'estado' => $validated['estado'],
             'tecnico_id' => $validated['tecnico_id'],
         ]);
+
+        event(new SolicitudActualizada($solicitud->load('tecnico', 'creador'))); // Cargamos relaciones para el JS
 
         return redirect()->route('solicitudes.index')->with('status', 'Solicitud actualizada correctamente.');
     }

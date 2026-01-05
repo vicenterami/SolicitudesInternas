@@ -8,4 +8,11 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        host: '172.16.60.18', // Tu IP real
+        hmr: {
+            host: '172.16.60.18', // Obliga al celular a buscar aquí los cambios
+        },
+        port: 5173,
+    },
 });

@@ -24,7 +24,8 @@
                             <p class="text-gray-700 text-lg mb-4">{{ $solicitud->descripcion }}</p>
                         </div>
                         <div class="text-right">
-                             <span class="inline-block px-3 py-1 font-semibold text-green-900 bg-green-200 rounded-full">
+                            {{--  👇 AQUÍ CAMBIO 1: Agregamos id="estado-solicitud-..." al span --}}
+                             <span id="estado-solicitud-{{ $solicitud->id }}" class="inline-block px-3 py-1 font-semibold text-green-900 bg-green-200 rounded-full">
                                 {{ strtoupper($solicitud->estado) }}
                             </span>
                             <div class="text-sm text-gray-500 mt-2">Prioridad: {{ ucfirst($solicitud->prioridad) }}</div>
@@ -53,7 +54,10 @@
                     
                     <div class="border-t mt-4 pt-4 text-sm text-gray-500 flex justify-between">
                         <span>Solicitado por: <strong>{{ $solicitud->creador->name }}</strong></span>
-                        <span>Técnico: <strong>{{ $solicitud->tecnico ? $solicitud->tecnico->name : 'Sin asignar' }}</strong></span>
+                        
+                        {{-- 👇 AQUÍ CAMBIO 2: Agregamos id="tecnico-solicitud-..." al strong --}}
+                        <span>Técnico: <strong id="tecnico-solicitud-{{ $solicitud->id }}">{{ $solicitud->tecnico ? $solicitud->tecnico->name : 'Sin asignar' }}</strong></span>
+                        
                         <span>Fecha: {{ $solicitud->created_at->format('d/m/Y H:i') }}</span>
                     </div>
                 </div>

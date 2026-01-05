@@ -12,22 +12,22 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-blue-500">
                     <div class="text-gray-500 text-sm font-bold uppercase">Total Tickets</div>
-                    <div class="text-3xl font-bold text-gray-800">{{ $total }}</div>
+                    <div class="text-3xl font-bold text-gray-800" id="dash-total">{{ $total }}</div>
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-red-500">
                     <div class="text-gray-500 text-sm font-bold uppercase">Pendientes</div>
-                    <div class="text-3xl font-bold text-red-600">{{ $pendientes }}</div>
+                    <div class="text-3xl font-bold text-red-600" id="dash-pendientes">{{ $pendientes }}</div>
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-yellow-500">
                     <div class="text-gray-500 text-sm font-bold uppercase">En Proceso</div>
-                    <div class="text-3xl font-bold text-yellow-600">{{ $asignadas }}</div>
+                    <div class="text-3xl font-bold text-yellow-600" id="dash-asignadas">{{ $asignadas }}</div>
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-green-500">
                     <div class="text-gray-500 text-sm font-bold uppercase">Resueltas</div>
-                    <div class="text-3xl font-bold text-green-600">{{ $resueltas }}</div>
+                    <div class="text-3xl font-bold text-green-600" id="dash-resueltas">{{ $resueltas }}</div>
                 </div>
             </div>
 

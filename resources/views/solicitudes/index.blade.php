@@ -44,7 +44,7 @@
                         </thead>
                         <tbody>
                             @forelse($solicitudes as $solicitud)
-                                <tr>
+                                <tr id= "fila-{{ $solicitud->id }}">
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <a href="{{ route('solicitudes.show', $solicitud->id) }}" class="text-blue-600 hover:underline font-bold">
                                             {{ $solicitud->titulo }}
