@@ -21,7 +21,7 @@
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-yellow-500">
-                    <div class="text-gray-500 text-sm font-bold uppercase">En Proceso</div>
+                    <div class="text-gray-500 text-sm font-bold uppercase">Asignadas</div>
                     <div class="text-3xl font-bold text-yellow-600" id="dash-asignadas">{{ $asignadas }}</div>
                 </div>
 

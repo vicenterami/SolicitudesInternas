@@ -13,6 +13,9 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <!-- User ID Meta Tag for JavaScript Access -->
+        <meta name="user-id" content="{{ Auth::id() }}">
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">

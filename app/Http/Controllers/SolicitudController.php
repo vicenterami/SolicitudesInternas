@@ -95,13 +95,17 @@ class SolicitudController extends Controller
             'tecnico_id' => 'nullable|exists:users,id',
         ]);
 
+        // 1. CAPTURAR ESTADO ANTERIOR ANTES DE ACTUALIZAR
+        $estadoAnterior = $solicitud->estado;
+
         $solicitud->update([
             'estado' => $validated['estado'],
             'tecnico_id' => $validated['tecnico_id'],
         ]);
 
-        event(new SolicitudActualizada($solicitud->load('tecnico', 'creador'))); // Cargamos relaciones para el JS
-
+        // 2. DISPARAR EVENTO CON ESTADO ANTERIOR Y ACTUAL
+        event(new SolicitudActualizada($solicitud->load('tecnico', 'creador'), $estadoAnterior));
+        
         return redirect()->route('solicitudes.index')->with('status', 'Solicitud actualizada correctamente.');
     }
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\SolicitudController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ComentarioController;
 
 // 1. Página de inicio (Pública)
 Route::get('/', function () {
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
     
     // Guardar comentario
     Route::post('/solicitudes/{id}/comentarios', [SolicitudController::class, 'storeComentario'])->name('solicitudes.comentarios.store');
+    // Rutas para editar y borrar comentarios
+    Route::put('/comentarios/{id}', [ComentarioController::class, 'update'])->name('comentarios.update');
+    Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy'])->name('comentarios.destroy');
 
     // Módulo de Administración de Usuarios (Solo Admin)
     // Solo permitimos entrar si el middleware 'auth' pasa, la seguridad extra está en el controlador

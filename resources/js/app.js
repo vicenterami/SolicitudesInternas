@@ -1,224 +1,215 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
+import axios from 'axios'; 
 
 window.Alpine = Alpine;
 Alpine.start();
 
+// 🟢 1. OBTENER ID DEL USUARIO ACTUAL
+const metaUserId = document.head.querySelector('meta[name="user-id"]');
+const currentUserId = metaUserId ? parseInt(metaUserId.content) : null;
+
 if (window.Echo) {
+    console.log('🚀 Echo inicializado. Usuario ID:', currentUserId);
 
-    // 1 Canal de solicitudes (Tabla Dashboard)
+    // =================================================================
+    // 🌍 CANAL GLOBAL: 'solicitudes' (Dashboard y Tabla General)
+    // =================================================================
     window.Echo.channel('solicitudes')
-        .listen('.solicitud.creada', (e) => {
-
-            // Verificamos si ya existe una fila con ese ID. Si existe, no hacemos NADA.
-            if (document.getElementById(`fila-${e.solicitud.id}`)) {
-                return; 
-            }
-
-            console.log('Evento recibido:', e);
-
-            const tablaBody = document.querySelector('table tbody');
-
-            if (tablaBody) {
-                // 1. Detectar si es Admin/Tecnico contando columnas de cabecera
-                const headers = document.querySelectorAll('table thead th');
-                const esAdminOTecnico = headers.length >= 5; // Asumimos que 5 columnas = tiene acciones
-
-                // 2. Construir celda de acciones
-                let celdaAcciones = '';
-                if (esAdminOTecnico) {
-                    celdaAcciones = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="/solicitudes/${e.solicitud.id}/editar" class="text-indigo-600 hover:text-indigo-900">
-                                Gestionar
-                            </a>
-                        </td>
-                    `;
-                }
-
-                // 3. Crear la fila con ESTILO EN LÍNEA para asegurar el amarillo
-                // Usamos style="..." para saltarnos problemas de compilación de Tailwind
-                const nuevaFilaHTML = `
-                    <tr id="fila-${e.solicitud.id}" style="background-color: #fef9c3; transition: background-color 2s ease;">
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            <a href="/solicitudes/${e.solicitud.id}" class="text-blue-600 hover:underline font-bold">
-                                ${e.solicitud.titulo}
-                            </a>
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            ${e.solicitud.creador ? e.solicitud.creador.name : 'Usuario ' + e.solicitud.user_id}
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            <span class="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight">
-                                <span aria-hidden class="absolute inset-0 bg-green-200 opacity-50 rounded-full"></span>
-                                <span class="relative">${e.solicitud.estado}</span>
-                            </span>
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            ${e.solicitud.tecnico ? e.solicitud.tecnico.name : 'Sin asignar'}
-                        </td>
-                        ${celdaAcciones}
-                    </tr>
-                `;
-
-                // 4. Insertar
-                tablaBody.insertAdjacentHTML('afterbegin', nuevaFilaHTML);
-
-                // 5. Animación de desvanecimiento
-                setTimeout(() => {
-                    const fila = document.getElementById(`fila-${e.solicitud.id}`);
-                    if (fila) {
-                        fila.style.backgroundColor = 'white'; // Volver a blanco suavemente
-                    }
-                }, 2000); // Espera 2 segundos antes de desvanecer
-
-            }
-        });
-
-    // 2. Canal de Comentarios (ACTUALIZADO VISUALMENTE)
-    const solicitudData = document.getElementById('solicitud-data');
-    
-    if (solicitudData) {
-        const solicitudId = solicitudData.dataset.id;
         
-        // A) LÓGICA DE ENVÍO SIN RECARGA (AJAX)
-        const form = document.getElementById('form-comentario');
-        const inputComentario = document.getElementById('comentario');
-        const btnEnviar = document.getElementById('btn-enviar');
-
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault(); // ¡ALTO! No recargues la página.
-
-                const comentarioTexto = inputComentario.value;
-                if (!comentarioTexto.trim()) return;
-
-                // Desactivar botón para evitar doble clic
-                btnEnviar.disabled = true;
-                btnEnviar.innerText = 'Enviando...';
-
-                // Usamos Axios (ya viene con Laravel)
-                axios.post(`/solicitudes/${solicitudId}/comentarios`, {
-                    comentario: comentarioTexto
-                })
-                .then(response => {
-                    // Éxito: Limpiamos el campo
-                    inputComentario.value = '';
-                    // No agregamos el comentario aquí manualmente.
-                    // Esperamos a que el WebSocket (o el Queue) nos avise para agregarlo.
-                })
-                .catch(error => {
-                    console.error('Error enviando comentario:', error);
-                    alert('Hubo un error al enviar el mensaje.');
-                })
-                .finally(() => {
-                    // Reactivar botón
-                    btnEnviar.disabled = false;
-                    btnEnviar.innerText = 'Enviar Comentario';
-                });
-            });
-        }
-
-        // B) ESCUCHA DEL WEBSOCKET CON FILTRO DE DUPLICADOS
-        window.Echo.channel(`solicitud.${solicitudId}`)
-            .listen('.comentario.creado', (e) => {
-                
-                // 1. VERIFICACIÓN ANTI-DUPLICADOS
-                // Si ya existe un div con este ID, no hacemos nada (evita dobles)
-                if (document.getElementById(`comentario-${e.comentario.id}`)) {
-                    return;
-                }
-
-                console.log('Comentario recibido:', e);
-
-                const listaComentarios = document.getElementById('lista-comentarios');
-                const mensajeVacio = document.getElementById('mensaje-sin-comentarios');
-
-                if (mensajeVacio) mensajeVacio.remove();
-
-                let rolTexto = 'Usuario';
-                if (e.comentario.user.rol_id === 1) rolTexto = 'Admin';
-                if (e.comentario.user.rol_id === 2) rolTexto = 'Técnico';
-
-                // HTML con el ID ÚNICO INCLUIDO
-                const nuevoComentarioHTML = `
-                    <div id="comentario-${e.comentario.id}" class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500 animate-pulse transition-all duration-1000">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-gray-800">
-                                ${e.comentario.user.name}
-                                <span class="text-xs text-gray-500 font-normal">(${rolTexto})</span>
-                            </span>
-                            <span class="text-xs text-gray-400">Justo ahora</span>
-                        </div>
-                        <p class="text-gray-700">
-                            ${e.comentario.comentario}
-                        </p>
-                    </div>
-                `;
-
-                listaComentarios.insertAdjacentHTML('beforeend', nuevoComentarioHTML);
-                listaComentarios.scrollTop = listaComentarios.scrollHeight;
-
-                setTimeout(() => {
-                    const nuevoElemento = document.getElementById(`comentario-${e.comentario.id}`);
-                    if (nuevoElemento) {
-                        nuevoElemento.classList.remove('animate-pulse');
-                    }
-                }, 2500);
-            });
-    }
-
-    // 3. ACTUALIZACIÓN EN TIEMPO REAL (SHOW Y DASHBOARD)
-    
-    // A) Si estamos viendo una solicitud específica (show.blade.php)
-    if (solicitudData) {
-        const idSolicitudVista = solicitudData.dataset.id;
-        
-        window.Echo.channel(`solicitud.${idSolicitudVista}`)
-            .listen('.solicitud.actualizada', (e) => {
-                console.log('Solicitud actualizada:', e);
-
-                // 1. Actualizar Estado visualmente
-                const badgeEstado = document.getElementById(`estado-solicitud-${e.solicitud.id}`);
-                if (badgeEstado) {
-                    badgeEstado.innerText = e.solicitud.estado.toUpperCase();
-                    // Opcional: Aquí podrías agregar lógica para cambiar el color (bg-green-200, bg-red-200) según el estado
-                }
-
-                // 2. Actualizar Técnico asignado
-                const textoTecnico = document.getElementById(`tecnico-solicitud-${e.solicitud.id}`);
-                if (textoTecnico) {
-                    textoTecnico.innerText = e.solicitud.tecnico ? e.solicitud.tecnico.name : 'Sin asignar';
-                    
-                    // Efecto visual de parpadeo amarillo para que el usuario note el cambio
-                    textoTecnico.parentElement.style.backgroundColor = '#fef9c3';
-                    setTimeout(() => textoTecnico.parentElement.style.backgroundColor = 'transparent', 2000);
-                }
-            });
-    }
-
-    // B) Escuchar actualizaciones globales para el Dashboard (Contadores)
-    // Nota: Para actualizar el GRÁFICO necesitaríamos recalcular todo. 
-    // Por ahora haremos un truco simple: Recargar la página si cambian los stats O incrementar manualmente.
-    // Para simplificar tu aprendizaje actual, haremos que si llega una nueva solicitud, aumente el contador Total y Pendientes.
-
-    window.Echo.channel('solicitudes')
+        // A) NUEVA SOLICITUD
         .listen('.solicitud.creada', (e) => {
-            // Incrementar contadores del Dashboard si existen en pantalla
+            console.log('🌍 Nueva Solicitud:', e);
+
+            // 1. Dashboard: Aumentar contadores
             const totalEl = document.getElementById('dash-total');
             const pendientesEl = document.getElementById('dash-pendientes');
             
             if (totalEl) totalEl.innerText = parseInt(totalEl.innerText) + 1;
             if (pendientesEl) pendientesEl.innerText = parseInt(pendientesEl.innerText) + 1;
-            
-            // Actualizar gráfico (Solo si existe la variable del gráfico)
-            // Esto es un truco: enviamos datos falsos visuales o recargamos. 
-            // Para hacerlo pro, deberías recibir los nuevos datos del gráfico en el evento.
+
+            // 2. Tabla: Crear nueva fila si estamos en el index
+            // Tabla Index
+            const tablaBody = document.querySelector('table tbody');
+            if (tablaBody && !document.getElementById(`fila-${e.solicitud.id}`)) {
+                const headers = document.querySelectorAll('table thead th');
+                const esAdminOTecnico = headers.length >= 5; 
+                let celdaAcciones = esAdminOTecnico ? 
+                    `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href="/solicitudes/${e.solicitud.id}/editar" class="text-indigo-600 hover:text-indigo-900">Gestionar</a></td>` : '';
+
+                const nuevaFilaHTML = `
+                    <tr id="fila-${e.solicitud.id}" class="bg-yellow-100 transition-colors duration-2000">
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm"><a href="/solicitudes/${e.solicitud.id}" class="text-blue-600 hover:underline font-bold">${e.solicitud.titulo}</a></td>
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${e.solicitud.creador ? e.solicitud.creador.name : 'Usuario'}</td>
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                            <span class="px-4 py-1 rounded-full text-sm font-bold border bg-red-100 text-red-800 border-red-200">
+                                ${e.solicitud.estado.charAt(0).toUpperCase() + e.solicitud.estado.slice(1)}
+                            </span>
+                        </td>
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">Sin asignar</td>
+                        ${celdaAcciones}
+                    </tr>`;
+                tablaBody.insertAdjacentHTML('afterbegin', nuevaFilaHTML);
+                setTimeout(() => {
+                    const f = document.getElementById(`fila-${e.solicitud.id}`);
+                    if(f) f.classList.remove('bg-yellow-100');
+                }, 2500);
+            }
         })
+
+        // B) SOLICITUD ACTUALIZADA (Bloque Corregido)
         .listen('.solicitud.actualizada', (e) => {
-             // Si cambia de estado, lo ideal sería recargar los contadores.
-             // Como es complejo calcular restar uno de pendientes y sumar uno a asignado en JS puro,
-             // una opción válida en sistemas reactivos simples es recargar el dashboard suavemente
-             // o simplemente dejar que el usuario refresque para ver los números globales exactos.
+            console.log('🔄 EVENTO RECIBIDO: Solicitud Actualizada', e);
+            
+            // Protección contra nulos + conversión a minúsculas
+            const ant = e.estadoAnterior ? String(e.estadoAnterior).toLowerCase() : 'desconocido';
+            const nue = e.solicitud.estado ? String(e.solicitud.estado).toLowerCase() : 'desconocido';
+
+            console.log(`📊 Procesando cambio Dashboard: ${ant} -> ${nue}`);
+
+            // --- 1. ACTUALIZAR DASHBOARD ---
+            const dashTotal = document.getElementById('dash-total');
+            if (dashTotal) {
+                const ids = {
+                    'pendiente': 'dash-pendientes',
+                    'asignada': 'dash-asignadas',
+                    'resuelta': 'dash-resueltas'
+                };
+
+                // Si el estado cambió, ajustamos contadores
+                if (ant !== nue) {
+                    // Restar del viejo
+                    if (ids[ant]) {
+                        const elOld = document.getElementById(ids[ant]);
+                        if (elOld) {
+                            let val = parseInt(elOld.innerText) || 0;
+                            if (val > 0) elOld.innerText = val - 1;
+                        }
+                    }
+                    // Sumar al nuevo
+                    if (ids[nue]) {
+                        const elNew = document.getElementById(ids[nue]);
+                        if (elNew) elNew.innerText = (parseInt(elNew.innerText) || 0) + 1;
+                    }
+                }
+            }
+
+            // 2. ACTUALIZAR TABLA
+            const fila = document.getElementById(`fila-${e.solicitud.id}`);
+            if (fila) {
+                const celdaEstado = fila.children[2]; 
+                const celdaTecnico = fila.children[3];
+                const badge = celdaEstado.querySelector('span');
+                
+                if (badge) {
+                    badge.innerText = nue.charAt(0).toUpperCase() + nue.slice(1);
+                    let col = 'bg-gray-100';
+                    if (nue === 'pendiente') col = 'bg-red-100 text-red-800 border-red-200';
+                    if (nue === 'asignada') col = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    if (nue === 'resuelta') col = 'bg-green-100 text-green-800 border-green-200';
+                    badge.className = `px-4 py-1 rounded-full text-sm font-bold border ${col}`;
+                }
+                if (celdaTecnico) {
+                    celdaTecnico.innerText = e.solicitud.tecnico ? e.solicitud.tecnico.name : 'Sin asignar';
+                }
+                fila.classList.add('bg-yellow-100');
+                setTimeout(() => fila.classList.remove('bg-yellow-100'), 1500);
+            }
         });
+
+
+    // =================================================================
+    // 🎯 CANAL ESPECÍFICO (Chat y Detalles)
+    // =================================================================
+    const solicitudData = document.getElementById('solicitud-data');
+    if (solicitudData) {
+        const solicitudId = solicitudData.dataset.id;
+        console.log(`📡 Conectando al canal privado: solicitud.${solicitudId}`);
+
+        // Chat Form
+        const form = document.getElementById('form-comentario');
+        const inputComentario = document.querySelector('textarea[name="comentario"]');
+        if (form && inputComentario) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                const btn = form.querySelector('button[type="submit"]');
+                const txt = inputComentario.value;
+                if (!txt.trim()) return;
+                btn.disabled = true; btn.innerText = '...';
+                axios.post(`/solicitudes/${solicitudId}/comentarios`, { comentario: txt })
+                    .then(() => inputComentario.value = '')
+                    .catch(() => alert('Error'))
+                    .finally(() => { btn.disabled = false; btn.innerText = 'Enviar Comentario'; });
+            });
+        }
+
+        // Listeners
+        window.Echo.channel(`solicitud.${solicitudId}`)
+            
+            // 1. CREAR
+            .listen('.comentario.creado', (e) => {
+                if (document.getElementById(`comentario-${e.comentario.id}`)) return;
+
+                const lista = document.getElementById('lista-comentarios');
+                const vacio = document.querySelector('p.text-gray-500.italic');
+                if (vacio) vacio.remove();
+
+                const esMio = currentUserId === e.comentario.user_id;
+                const clase = esMio ? 'border-l-4 border-blue-500' : '';
+                let rol = e.comentario.user.rol_id === 2 ? 'Técnico' : (e.comentario.user.rol_id === 3 ? 'Admin' : 'Usuario');
+
+                const html = `
+                    <div id="comentario-${e.comentario.id}" x-data="{ editing: false }" class="bg-white p-4 rounded-lg shadow ${clase} animate-pulse">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="font-bold text-sm">${e.comentario.user.name} <span class="text-xs text-gray-500">(${rol})</span></div>
+                            <div class="text-xs text-gray-400">Ahora</div>
+                        </div>
+                        <p x-show="!editing" class="text-gray-700 whitespace-pre-wrap">${e.comentario.comentario}</p>
+                    </div>`;
+                lista.insertAdjacentHTML('beforeend', html);
+                lista.scrollTop = lista.scrollHeight;
+            })
+
+            // 2. ACTUALIZAR (EDITAR) COMENTARIO
+            .listen('.comentario.actualizado', (e) => {
+                console.log('✏️ Comentario editado:', e);
+                const div = document.getElementById(`comentario-${e.comentario.id}`);
+                if (div) {
+                    const p = div.querySelector('p[x-show="!editing"]');
+                    if (p) {
+                        p.innerText = e.comentario.comentario;
+                        if (!p.innerHTML.includes('Editado')) p.innerHTML += ' <small class="text-gray-400 text-xs">(Editado)</small>';
+                    }
+                    div.classList.add('bg-blue-50');
+                    setTimeout(() => div.classList.remove('bg-blue-50'), 1000);
+                }
+            })
+
+            // 3. ELIMINAR COMENTARIO
+            .listen('.comentario.eliminado', (e) => {
+                console.log('🗑️ Comentario eliminado ID:', e.comentarioId);
+                const div = document.getElementById(`comentario-${e.comentarioId}`);
+                if (div) {
+                    div.style.transition = 'opacity 0.5s'; div.style.opacity = '0';
+                    setTimeout(() => {
+                        div.remove();
+                        const lista = document.getElementById('lista-comentarios');
+                        if (lista && lista.children.length === 0) lista.innerHTML = '<p class="text-gray-500 italic text-center">No hay comentarios.</p>';
+                    }, 500);
+                }
+            })
+
+            // 4. SOLICITUD ACTUALIZADA (Visual Show)
+            .listen('.solicitud.actualizada', (e) => {
+                const badge = document.getElementById(`estado-solicitud-${e.solicitud.id}`);
+                if (badge) {
+                    badge.innerText = e.solicitud.estado.toUpperCase();
+                    let c = 'bg-gray-100';
+                    if (e.solicitud.estado === 'pendiente') c = 'bg-red-100 text-red-800 border-red-200';
+                    if (e.solicitud.estado === 'asignada') c = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    if (e.solicitud.estado === 'resuelta') c = 'bg-green-100 text-green-800 border-green-200';
+                    badge.className = `px-4 py-1 rounded-full text-sm font-bold border ${c}`;
+                }
+            });
+    }
 }

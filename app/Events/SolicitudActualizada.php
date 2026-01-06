@@ -17,10 +17,12 @@ class SolicitudActualizada implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $solicitud;
+    public $estadoAnterior; // Nuevo atributo para el estado anterior
 
-    public function __construct(Solicitud $solicitud)
+    public function __construct(Solicitud $solicitud, $estadoAnterior)
     {
         $this->solicitud = $solicitud;
+        $this->estadoAnterior = $estadoAnterior;
     }
 
     public function broadcastOn(): array
