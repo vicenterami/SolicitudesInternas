@@ -12,14 +12,16 @@ Sistema integral de gestión de tickets y soporte informático (Help Desk) con c
 
 ## 📋 Características Principales
 
-* **📊 Dashboard Ejecutivo:** Visualización gráfica de métricas, KPIs y contadores de estado en tiempo real.
-* **🎫 Gestión de Tickets:** Ciclo de vida completo (Creación, Asignación, Resolución).
+* **📊 Dashboard Ejecutivo en Vivo:** Métricas, contadores y gráficos de KPI (Tickets por Prioridad) que se actualizan automáticamente vía WebSockets.
+* **🎫 Gestión de Tickets:** Ciclo de vida completo con estados (Pendiente 🔴, Asignada 🟡, Resuelta 🟢).
+* **💬 Chat en Tiempo Real:** Sistema de comentarios con actualización instantánea (sin recargar la página), indicadores de edición y eliminación.
+* **📎 Adjuntos:** Soporte para evidencias y archivos con almacenamiento seguro.
 * **🛡️ Control de Acceso (RBAC):**
     * **Usuario:** Vista limitada a sus propias solicitudes.
-    * **Técnico/Admin:** Vista global, capacidad de gestión y reasignación.
-* **💬 Interacción:** Hilo de comentarios por solicitud y subida de archivos adjuntos.
-* **🔒 Seguridad:** Validación de datos server-side y protección de rutas.
-* **⚡ Real-Time:** Chat en vivo y notificaciones push mediante **WebSockets**.
+    * **Técnico:** Vista global, capacidad de gestión y reasignación.
+    * **Admin:** Vista global, capacidad de gestión completa y usuarios.
+* **🔒 Seguridad:** Validación de datos server-side y protección de rutas con Policies.
+* **⚡ Arquitectura Reactiva:** Interfaz optimizada con Alpine.js y Axios para una sensación de aplicación nativa.
 
 ---
 
@@ -47,12 +49,12 @@ Este proyecto va más allá de un CRUD tradicional, implementando una arquitectu
 | Capa | Tecnología | Descripción |
 | :--- | :--- | :--- |
 | **Backend** | Laravel 11 (PHP 8.3) | Framework principal. |
-| **WebSockets** | **Laravel Reverb** | Servidor de sockets first-party para broadcasting. |
-| **Frontend** | Blade + Tailwind + **Alpine.js** | Renderizado híbrido con reactividad ligera. |
-| **Cliente HTTP** | **Axios** | Peticiones asíncronas para comentarios sin reload. |
-| **Cliente WS** | **Laravel Echo** | Escucha de canales privados y públicos en JS. |
-| **Base de Datos** | MySQL 8.0 (Docker) | Persistencia relacional. |
-| **Colas** | Database Driver | Gestión de Jobs (`jobs` table) y eventos fallidos. |
+| **Broadcasting** | **Laravel Reverb** | Servidor de WebSockets first-party. |
+| **Frontend** | Blade + Tailwind + **Alpine.js** | Stack TALL modificado para velocidad. |
+| **Cliente HTTP** | **Axios** | Peticiones asíncronas (AJAX). |
+| **Cliente WS** | **Laravel Echo** | Cliente de WebSockets en JS. |
+| **Base de Datos** | MySQL 8.0 (Docker) | Persistencia de datos. |
+| **Colas** | Database Driver | Procesamiento asíncrono de eventos. |
 
 ---
 
@@ -111,76 +113,68 @@ Tablas gestionadas automáticamente por Laravel para soportar la arquitectura as
 
 ---
 
-## 💻 Guía de Ejecución (Entorno Local)
+## ⚙️ Configuración del Entorno (.env)
 
-Debido a la arquitectura desacoplada, el entorno de desarrollo requiere **4 procesos simultáneos**. Se recomienda usar terminales divididas o pestañas.
+Para desplegar el proyecto, duplica el archivo .env.example a .env y configura las siguientes variables
 
-### 1. Servidor Web (Laravel)
-Maneja las peticiones HTTP estándar (vistas, API).
-```bash
-php artisan serve
-# Corre en: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+```ini
+APP_NAME="Solicitudes Internas"
+APP_ENV=local
+APP_KEY=base64:GENERA_TU_CLAVE_AQUI  # Ejecuta: php artisan key:generate
+APP_DEBUG=true
+APP_TIMEZONE=America/Santiago        # Configurado para Chile
+
+# ⚠️ Cambiar 'localhost' por tu IP de red (ej: 192.168.1.50) si accedes desde otros PC
+APP_URL=http://localhost
+
+# Configuración Base de Datos (Docker Default)
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=sail
+DB_PASSWORD=password
+
+# Colas y Archivos
+BROADCAST_CONNECTION=reverb
+FILESYSTEM_DISK=public       # CRÍTICO: Para ver imágenes adjuntas
+QUEUE_CONNECTION=database    # CRÍTICO: Para procesar el chat
+
+# Configuración de Reverb (WebSockets)
+REVERB_APP_ID=100001
+REVERB_APP_KEY=reverb_app_key_dev
+REVERB_APP_SECRET=reverb_app_secret_dev
+REVERB_HOST="0.0.0.0"
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+# Configuración Frontend (Vite)
+VITE_APP_NAME="${APP_NAME}"
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="localhost" # ⚠️ Debe coincidir con la IP de APP_URL
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 ```
-
-### 2. Compilación de Assets (Vite)
-
-Maneja el Hot Module Replacement (HMR) para CSS y JS.
-
-```bash
-npm run dev
-# Corre en: http://localhost:5173
-```
-
-### 3. Servidor de WebSockets (Reverb)
-
-El "Walkie-Talkie" del sistema. Mantiene las conexiones persistentes.
-
-```bash
-php artisan reverb:start
-# Corre en: localhost:8080
-```
-
-### 4. Procesador de Colas (Worker) 👷
-
-El trabajador incansable. Procesa eventos y notificaciones en segundo plano.
-
-**Nota Importante:** Si este proceso no corre, los mensajes de chat no se enviarán a los otros usuarios.
-
-```bash
-php artisan queue:work
-```
-
-## 📋 Comandos Útiles
-
-Si realizas cambios en el código backend (Eventos/Jobs) mientras el worker está corriendo, recuerda reiniciar la cola:
-
-```bash
-php artisan queue:restart
-```
-Limpiar caché de configuración (útil si cambias .env):
-
-```bash
-php artisan config:clear
-```
-
 ---
 
 ## 🚀 Guía de Instalación Rápida (Docker Sail)
 
-Este proyecto está contenerizado usando **Laravel Sail**. No necesitas instalar PHP, Composer, Node ni MySQL en tu máquina local. Solo necesitas **Docker Desktop** (o Docker Engine en Linux).
+Este proyecto utiliza Laravel Sail. No necesitas instalar PHP ni MySQL en tu sistema, solo Docker Desktop.
 
-### 1. Primeros pasos
+### 1. Clonar y Configurar
 
 ```bash
-# 1. Clonar el repositorio
 git clone <url-del-repo>
 cd SolicitudesInternas
-
-# 2. Configurar variables de entorno
 cp .env.example .env
-# (Configura tu IP en APP_URL y VITE_REVERB_HOST dentro del .env)
+# (Edita el .env con los valores de arriba)
+```
 
-# 3. Instalar dependencias (Usando un contenedor temporal)
+### 2. Instalar Dependencias
+
+Usamos un contenedor temporal para instalar las librerías de PHP:
+
+```bash
 docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v "$(pwd):/var/www/html" \
@@ -189,17 +183,42 @@ docker run --rm \
     composer install --ignore-platform-reqs
 ```
 
-### 2. Levantar el Entorno
+### 3. Iniciar el Sistema
 
 ```bash
-# Iniciar los contenedores (App, MySQL, Redis, Mailpit)
-./vendor/bin/sail up -d
-
-# Generar Key y Migrar Base de Datos
-./vendor/bin/sail artisan key:generate
-./vendor/bin/sail artisan migrate:fresh --seed
-./vendor/bin/sail npm install
+./vendor/bin/sail up -d       # Levantar contenedores
+./vendor/bin/sail npm install # Instalar dependencias JS
+./vendor/bin/sail npm run build # Compilar assets iniciales
 ```
+
+### 4. Configuración Final (Base de Datos & Storage)
+
+```bash
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate:fresh --seed # Crea tablas y usuarios de prueba
+./vendor/bin/sail artisan storage:link         # Vincula la carpeta pública
+```
+---
+
+## 🔐 Usuarios de Prueba (Seeders)
+
+El comando migrate:fresh --seed crea los siguientes accesos por defecto:
+
+| Rol | Email | Contraseña |
+| :--- | :--- | :--- |
+| Admin | admin@example.com | password|
+| Técnico | tecnico@example.com | password|
+| Usuario | usuario@example.com | password|
+
+---
+
+## 🛠 Solución de Problemas Comunes
+
+Las imágenes dan error 403: Asegúrate de que en tu .env tengas FILESYSTEM_DISK=public y hayas ejecutado ./vendor/bin/sail artisan storage:link.
+
+El chat no se actualiza solo: Verifica que tengas corriendo queue:work y reverb:start. Si hiciste cambios en el código backend, reinicia la cola con ./vendor/bin/sail artisan queue:restart.
+
+La hora de los tickets es incorrecta: Verifica que en tu .env tengas APP_TIMEZONE=America/Santiago y limpia la caché con ./vendor/bin/sail artisan config:clear.
 
 ---
 
@@ -241,22 +260,6 @@ Para procesar envíos de notificaciones en segundo plano.
 
 ---
 
-### 🛠 Acceso a Base de Datos Externa
-
-Si deseas conectar un gestor de BD (como DBeaver, TablePlus o HeidiSQL) usa estas credenciales:
-
-Parámetro,Valor
-Host,127.0.0.1
-Port,3306
-User,sail
-Password,password
-Database,laravel
-
-
-Desarrollado con ❤️ para la Municipalidad de Villarrica.
-
----
-
 ### 4. El "Script Mágico" (Bonus)
 
 Forma de no tener que escribir 4 comandos cada vez.
@@ -290,4 +293,89 @@ echo "⚠️  Ahora ejecuta en pestañas separadas:"
 echo "   1. ./vendor/bin/sail npm run dev"
 echo "   2. ./vendor/bin/sail artisan reverb:start"
 echo "   3. ./vendor/bin/sail artisan queue:work"
+```
+
+---
+
+## 🐳 Manual de Operaciones: Docker y Base de Datos
+
+Guía técnica para la gestión de contenedores y acceso a datos del sistema Solicitudes Internas.
+
+### 1. Estado del Sistema
+
+El proyecto corre sobre Laravel Sail (Docker Compose). Para verificar que todo esté funcionando:
+
+```bash
+docker ps
+```
+
+Deberías ver activos los siguientes servicios:
+
+    solicitudesinternas-laravel.test-1: Aplicación Web (Puertos 80, 5173, 8080).
+
+    solicitudesinternas-mysql-1: Base de Datos (Puerto 3306).
+
+
+### 2. Acceso a Base de Datos (Clientes Externos)
+
+Puedes conectar cualquier gestor de base de datos (DBeaver, HeidiSQL, TablePlus, Workbench) usando estas credenciales. Los datos persisten en el volumen sail-mysql aunque apagues el PC.
+
+Parámetro,Valor
+Host,127.0.0.1
+Port,3306
+User,sail
+Password,password
+Database,laravel
+
+## 3. Gestión vía Terminal (CLI)
+
+No es necesario instalar clientes gráficos. Sail incluye herramientas de línea de comandos.
+
+## 🔌 Conectarse a MySQL
+
+Entra a la consola SQL directamente dentro del contenedor:
+
+```bash
+./vendor/bin/sail mysql
+```
+
+Comandos útiles dentro de MySQL:
+
+```bash
+SHOW TABLES;       -- Ver todas las tablas
+SELECT * FROM users; -- Ver usuarios registrados
+EXIT;              -- Salir
+```
+
+## 🛠 Comandos de Mantenimiento
+
+Reiniciar la Base de Datos (Borrado Completo): ⚠️ Advertencia: Esto borra todos los tickets y comentarios.
+
+```bash
+./vendor/bin/sail artisan migrate:fresh --seed
+```
+
+Ver Logs del Sistema: Si algo falla, revisa qué está pasando en los contenedores:
+
+```bash
+./vendor/bin/sail logs -f
+```
+
+## 4. Ciclo de Vida de los Contenedores
+
+Iniciar el sistema (Segundo plano):
+
+```bash
+./vendor/bin/sail up -d
+```
+
+Detener el sistema:
+
+```bash
+./vendor/bin/sail stop
+```
+
+Destruir contenedores (Apagado total): Nota: No borra los datos de la BD, solo los contenedores.
+```bash
+./vendor/bin/sail down
 ```
