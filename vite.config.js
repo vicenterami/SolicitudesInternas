@@ -9,10 +9,11 @@ export default defineConfig({
         }),
     ],
     server: {
-        host: '172.16.60.18', // Tu IP real
+        // ESTO ES LO QUE SOLUCIONA TU ERROR:
+        host: '0.0.0.0', // Escucha en todas las interfaces internas del contenedor
+        port: 5173,      // Puerto estándar de Vite
         hmr: {
-            host: '172.16.60.18', // Obliga al celular a buscar aquí los cambios
+            host: '172.16.60.18', // Dirección que usará el navegador para conectar
         },
-        port: 5173,
     },
 });

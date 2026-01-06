@@ -19,6 +19,7 @@ Sistema integral de gestión de tickets y soporte informático (Help Desk) con c
     * **Técnico/Admin:** Vista global, capacidad de gestión y reasignación.
 * **💬 Interacción:** Hilo de comentarios por solicitud y subida de archivos adjuntos.
 * **🔒 Seguridad:** Validación de datos server-side y protección de rutas.
+* **⚡ Real-Time:** Chat en vivo y notificaciones push mediante **WebSockets**.
 
 ---
 
@@ -110,19 +111,6 @@ Tablas gestionadas automáticamente por Laravel para soportar la arquitectura as
 
 ---
 
-## 🚀 Guía de Instalación y Despliegue
-
-### 1. Infraestructura de Base de Datos
-El proyecto requiere una instancia de MySQL corriendo (configurada vía Docker).
-
-```bash
-cd ~/servicios-db
-# Levantar el contenedor de MySQL en segundo plano
-sudo docker compose up -d
-```
-
----
-
 ## 💻 Guía de Ejecución (Entorno Local)
 
 Debido a la arquitectura desacoplada, el entorno de desarrollo requiere **4 procesos simultáneos**. Se recomienda usar terminales divididas o pestañas.
@@ -175,4 +163,131 @@ Limpiar caché de configuración (útil si cambias .env):
 php artisan config:clear
 ```
 
+---
+
+## 🚀 Guía de Instalación Rápida (Docker Sail)
+
+Este proyecto está contenerizado usando **Laravel Sail**. No necesitas instalar PHP, Composer, Node ni MySQL en tu máquina local. Solo necesitas **Docker Desktop** (o Docker Engine en Linux).
+
+### 1. Primeros pasos
+
+```bash
+# 1. Clonar el repositorio
+git clone <url-del-repo>
+cd SolicitudesInternas
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# (Configura tu IP en APP_URL y VITE_REVERB_HOST dentro del .env)
+
+# 3. Instalar dependencias (Usando un contenedor temporal)
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php83-composer:latest \
+    composer install --ignore-platform-reqs
+```
+
+### 2. Levantar el Entorno
+
+```bash
+# Iniciar los contenedores (App, MySQL, Redis, Mailpit)
+./vendor/bin/sail up -d
+
+# Generar Key y Migrar Base de Datos
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate:fresh --seed
+./vendor/bin/sail npm install
+```
+
+---
+
+## 💻 Guía de Desarrollo (Comandos Diarios)
+
+Para que el sistema funcione al 100% (incluyendo chat en tiempo real y estilos), necesitas correr estos procesos. Se recomienda usar pestañas separadas en la terminal:
+
+### 1. Servidor Principal
+
+El sitio estará disponible en http://localhost (o tu IP de red).
+
+```bash
+./vendor/bin/sail up
+```
+
+### 2. Compilación de Assets (Vite)
+
+Para cargar estilos y JS (Hot Reload).
+
+```bash
+./vendor/bin/sail npm run dev
+```
+
+### 3. WebSockets (Reverb)
+
+Para que funcione el Chat en tiempo real.
+
+```bash
+./vendor/bin/sail artisan reverb:start
+```
+
+### 4. Cola de Trabajo (Worker)
+
+Para procesar envíos de notificaciones en segundo plano.
+
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+---
+
+### 🛠 Acceso a Base de Datos Externa
+
+Si deseas conectar un gestor de BD (como DBeaver, TablePlus o HeidiSQL) usa estas credenciales:
+
+Parámetro,Valor
+Host,127.0.0.1
+Port,3306
+User,sail
+Password,password
+Database,laravel
+
+
 Desarrollado con ❤️ para la Municipalidad de Villarrica.
+
+---
+
+### 4. El "Script Mágico" (Bonus)
+
+Forma de no tener que escribir 4 comandos cada vez.
+Crea un archivo llamado `dev.sh` en la raíz de tu proyecto:
+
+```bash
+touch dev.sh
+chmod +x dev.sh
+nano dev.sh
+```
+
+Y pega este contenido dentro:
+
+```bash
+#!/bin/bash
+echo "🚀 Iniciando Entorno de Solicitudes Internas..."
+
+# 1. Levantar Docker
+./vendor/bin/sail up -d
+
+# 2. Instalar dependencias de front si no existen
+if [ ! -d "node_modules" ]; then
+    ./vendor/bin/sail npm install
+fi
+
+# 3. Abrir pestañas o procesos en segundo plano es complejo en script simple,
+# pero podemos usar un gestor de procesos ligero o instrucciones:
+
+echo "✅ Contenedores Arriba."
+echo "⚠️  Ahora ejecuta en pestañas separadas:"
+echo "   1. ./vendor/bin/sail npm run dev"
+echo "   2. ./vendor/bin/sail artisan reverb:start"
+echo "   3. ./vendor/bin/sail artisan queue:work"
+```
