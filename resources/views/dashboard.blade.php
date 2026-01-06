@@ -61,25 +61,37 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const ctx = document.getElementById('miGrafico');
+        
+        // 1. Obtenemos los datos de PHP
+        const etiquetas = {!! json_encode($labels) !!};
+        const datos = {!! json_encode($data) !!};
 
-        new Chart(ctx, {
-            type: 'doughnut', // Puedes cambiar a 'bar', 'pie', 'line'
+        // 2. Definimos colores según la etiqueta (Lógica Semáforo)
+        const coloresFondo = etiquetas.map(label => {
+            const l = label.toLowerCase();
+            if (l === 'alta') return 'rgba(239, 68, 68, 0.2)';   // Rojo (Red-500)
+            if (l === 'media') return 'rgba(234, 179, 8, 0.2)';  // Amarillo (Yellow-500)
+            return 'rgba(34, 197, 94, 0.2)';                     // Verde (Green-500) para Baja
+        });
+
+        const coloresBorde = etiquetas.map(label => {
+            const l = label.toLowerCase();
+            if (l === 'alta') return 'rgba(239, 68, 68, 1)';
+            if (l === 'media') return 'rgba(234, 179, 8, 1)';
+            return 'rgba(34, 197, 94, 1)';
+        });
+
+        // 3. Inicializamos el gráfico globalmente
+        window.miChart = new Chart(ctx, {
+            type: 'doughnut', 
             data: {
-                labels: {!! json_encode($labels) !!}, // Pasamos datos de PHP a JS
+                labels: etiquetas, 
                 datasets: [{
                     label: '# de Tickets',
-                    data: {!! json_encode($data) !!},
+                    data: datos,
                     borderWidth: 1,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)', // Rojo (Alta?)
-                        'rgba(54, 162, 235, 0.2)', // Azul
-                        'rgba(255, 206, 86, 0.2)', // Amarillo
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                    ],
+                    backgroundColor: coloresFondo,
+                    borderColor: coloresBorde,
                 }]
             },
             options: {

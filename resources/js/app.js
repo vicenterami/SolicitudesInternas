@@ -21,15 +21,29 @@ if (window.Echo) {
         .listen('.solicitud.creada', (e) => {
             console.log('🌍 Nueva Solicitud:', e);
 
-            // 1. Dashboard: Aumentar contadores
+            // 1. Dashboard: Aumentar contadores numéricos
             const totalEl = document.getElementById('dash-total');
             const pendientesEl = document.getElementById('dash-pendientes');
             
             if (totalEl) totalEl.innerText = parseInt(totalEl.innerText) + 1;
             if (pendientesEl) pendientesEl.innerText = parseInt(pendientesEl.innerText) + 1;
 
-            // 2. Tabla: Crear nueva fila si estamos en el index
-            // Tabla Index
+            // 2. ACTUALIZAR GRÁFICO DE PRIORIDAD (KPI) 📊
+            if (window.miChart && e.solicitud.prioridad) {
+                // Buscamos en qué posición del array está la prioridad (ej: "Alta")
+                const labels = window.miChart.data.labels;
+                const index = labels.findIndex(label => label.toLowerCase() === e.solicitud.prioridad.toLowerCase());
+
+                if (index !== -1) {
+                    // Sumamos 1 al valor existente en esa porción del pastel
+                    const valorActual = window.miChart.data.datasets[0].data[index];
+                    window.miChart.data.datasets[0].data[index] = valorActual + 1;
+                    window.miChart.update();
+                    console.log(`📊 Gráfico actualizado: +1 a ${e.solicitud.prioridad}`);
+                }
+            }
+
+            // 3. Tabla: Crear nueva fila si estamos en el index
             const tablaBody = document.querySelector('table tbody');
             if (tablaBody && !document.getElementById(`fila-${e.solicitud.id}`)) {
                 const headers = document.querySelectorAll('table thead th');
@@ -57,17 +71,16 @@ if (window.Echo) {
             }
         })
 
-        // B) SOLICITUD ACTUALIZADA (Bloque Corregido)
+        // B) SOLICITUD ACTUALIZADA
         .listen('.solicitud.actualizada', (e) => {
             console.log('🔄 EVENTO RECIBIDO: Solicitud Actualizada', e);
             
-            // Protección contra nulos + conversión a minúsculas
             const ant = e.estadoAnterior ? String(e.estadoAnterior).toLowerCase() : 'desconocido';
             const nue = e.solicitud.estado ? String(e.solicitud.estado).toLowerCase() : 'desconocido';
 
             console.log(`📊 Procesando cambio Dashboard: ${ant} -> ${nue}`);
 
-            // --- 1. ACTUALIZAR DASHBOARD ---
+            // --- 1. ACTUALIZAR DASHBOARD (Números) ---
             const dashTotal = document.getElementById('dash-total');
             if (dashTotal) {
                 const ids = {
@@ -76,9 +89,7 @@ if (window.Echo) {
                     'resuelta': 'dash-resueltas'
                 };
 
-                // Si el estado cambió, ajustamos contadores
                 if (ant !== nue) {
-                    // Restar del viejo
                     if (ids[ant]) {
                         const elOld = document.getElementById(ids[ant]);
                         if (elOld) {
@@ -86,7 +97,6 @@ if (window.Echo) {
                             if (val > 0) elOld.innerText = val - 1;
                         }
                     }
-                    // Sumar al nuevo
                     if (ids[nue]) {
                         const elNew = document.getElementById(ids[nue]);
                         if (elNew) elNew.innerText = (parseInt(elNew.innerText) || 0) + 1;
@@ -143,21 +153,16 @@ if (window.Echo) {
             });
         }
 
-        // Listeners
+        // Listeners Comentarios y Detalles
         window.Echo.channel(`solicitud.${solicitudId}`)
-            
-            // 1. CREAR
             .listen('.comentario.creado', (e) => {
                 if (document.getElementById(`comentario-${e.comentario.id}`)) return;
-
                 const lista = document.getElementById('lista-comentarios');
                 const vacio = document.querySelector('p.text-gray-500.italic');
                 if (vacio) vacio.remove();
-
                 const esMio = currentUserId === e.comentario.user_id;
                 const clase = esMio ? 'border-l-4 border-blue-500' : '';
                 let rol = e.comentario.user.rol_id === 2 ? 'Técnico' : (e.comentario.user.rol_id === 3 ? 'Admin' : 'Usuario');
-
                 const html = `
                     <div id="comentario-${e.comentario.id}" x-data="{ editing: false }" class="bg-white p-4 rounded-lg shadow ${clase} animate-pulse">
                         <div class="flex justify-between items-center mb-2">
@@ -169,10 +174,7 @@ if (window.Echo) {
                 lista.insertAdjacentHTML('beforeend', html);
                 lista.scrollTop = lista.scrollHeight;
             })
-
-            // 2. ACTUALIZAR (EDITAR) COMENTARIO
             .listen('.comentario.actualizado', (e) => {
-                console.log('✏️ Comentario editado:', e);
                 const div = document.getElementById(`comentario-${e.comentario.id}`);
                 if (div) {
                     const p = div.querySelector('p[x-show="!editing"]');
@@ -184,10 +186,7 @@ if (window.Echo) {
                     setTimeout(() => div.classList.remove('bg-blue-50'), 1000);
                 }
             })
-
-            // 3. ELIMINAR COMENTARIO
             .listen('.comentario.eliminado', (e) => {
-                console.log('🗑️ Comentario eliminado ID:', e.comentarioId);
                 const div = document.getElementById(`comentario-${e.comentarioId}`);
                 if (div) {
                     div.style.transition = 'opacity 0.5s'; div.style.opacity = '0';
@@ -198,8 +197,6 @@ if (window.Echo) {
                     }, 500);
                 }
             })
-
-            // 4. SOLICITUD ACTUALIZADA (Visual Show)
             .listen('.solicitud.actualizada', (e) => {
                 const badge = document.getElementById(`estado-solicitud-${e.solicitud.id}`);
                 if (badge) {
